@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  MENTOR
+  ADMIN
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  telegramId String   @unique
+  name       String
+  role       Role
+  createdAt  DateTime @default(now())
+
+  // Student relations
+  tasks      Task[]   @relation("StudentTasks")
+  reports    Report[]
+
+  // Mentor relations
+  assignedTasks Task[] @relation("MentorTasks")
+  grades        Grade[]
+}
+
+model Task {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String
+  status      TaskStatus @default(PENDING)
+  dueDate     DateTime?
+  createdAt   DateTime   @default(now())
+
+  student     User       @relation("StudentTasks", fields: [studentId], references: [id])
+  studentId   Int
+  mentor      User       @relation("MentorTasks", fields: [mentorId], references: [id])
+  mentorId    Int
+}
+
+model Report {
+  id          Int      @id @default(autoincrement())
+  content     String
+  hoursWorked Int
+  createdAt   DateTime @default(now())
+
+  student     User     @relation(fields: [studentId], references: [id])
+  studentId   Int
+  grade       Grade?
+}
+
+model Grade {
+  id        Int      @id @default(autoincrement())
+  score     Int      // 1-100
+  comment   String?
+  createdAt DateTime @default(now())
+
+  report    Report   @relation(fields: [reportId], references: [id])
+  reportId  Int      @unique
+  mentor    User     @relation(fields: [mentorId], references: [id])
+  mentorId  Int
+}
